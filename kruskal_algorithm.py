@@ -2,26 +2,33 @@ import random
 import os
 
 
-# FASTA generator function
-def generate_fasta_sequences(num_sequences, max_length):
+def read_fasta_file(filename):
     """
-    Generates random DNA sequences.
+    Reads sequences from a FASTA file.
 
     Parameters:
-        num_sequences (int): Number of sequences to generate.
-        max_length (int): Maximum length of the sequences.
+        filename (str): Path to the FASTA file.
 
     Returns:
         list: A list of tuples with headers and sequences.
     """
-    nucleotides = 'ACGT'
     fasta_entries = []
+    current_header = None
+    current_sequence = []
 
-    for i in range(1, num_sequences + 1):
-        seq_length = random.randint(1, max_length)
-        sequence = ''.join(random.choices(nucleotides, k=seq_length))
-        header = f">sequence_{i}"
-        fasta_entries.append((header, sequence))
+    with open(filename, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line.startswith('>'):
+                if current_header:
+                    fasta_entries.append((current_header, ''.join(current_sequence)))
+                current_header = line
+                current_sequence = []
+            else:
+                current_sequence.append(line)
+        
+        if current_header:  # Add the last sequence
+            fasta_entries.append((current_header, ''.join(current_sequence)))
 
     return fasta_entries
 
@@ -96,13 +103,11 @@ class Graph:
 
 # Driver Code
 if __name__ == '__main__':
-    # Generate FASTA sequences
-    num_sequences = 25
-    max_length = 50
-    fasta_data = generate_fasta_sequences(num_sequences, max_length)
+    # Read FASTA sequences from file
+    fasta_data = read_fasta_file('output.fasta')
 
-    # Print the generated sequences
-    print("Generated FASTA Sequences:")
+    # Print the sequences from file
+    print("Sequences from FASTA file:")
     for header, seq in fasta_data:
         print(f"{header}\n{seq}")
 
