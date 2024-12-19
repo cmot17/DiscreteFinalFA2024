@@ -1,19 +1,68 @@
-from utils import read_fasta_file, create_distance_edges
+"""
+Implementation of Kruskal's Minimum Spanning Tree algorithm.
+
+This module provides a Graph class that implements Kruskal's algorithm
+for finding the minimum spanning tree of a weighted undirected graph.
+"""
+
+from typing import List, Tuple
+
 
 class Graph:
-    def __init__(self, vertices):
-        self.V = vertices
-        self.graph = []
+    """
+    A class representing an undirected weighted graph and implementing Kruskal's algorithm.
 
-    def addEdge(self, u, v, w):
-        self.graph.append([u, v, w])
+    Attributes:
+        vertices (int): Number of vertices in the graph
+        graph (List[List[int, int, float]]): List of edges with weights [u, v, weight]
+    """
 
-    def find(self, parent, i):
+    def __init__(self, vertices: int):
+        """
+        Initialize the graph with a given number of vertices.
+
+        Args:
+            vertices: Number of vertices in the graph
+        """
+        self.vertices = vertices
+        self.graph: List[List[float]] = []
+
+    def add_edge(self, u: int, v: int, weight: float) -> None:
+        """
+        Add an edge to the graph.
+
+        Args:
+            u: First vertex
+            v: Second vertex
+            weight: Weight of the edge
+        """
+        self.graph.append([u, v, weight])
+
+    def find_parent(self, parent: List[int], i: int) -> int:
+        """
+        Find the parent of a vertex using path compression.
+
+        Args:
+            parent: List storing parent information
+            i: Vertex to find parent for
+
+        Returns:
+            Parent vertex
+        """
         if parent[i] != i:
-            parent[i] = self.find(parent, parent[i])
+            parent[i] = self.find_parent(parent, parent[i])
         return parent[i]
 
-    def union(self, parent, rank, x, y):
+    def union(self, parent: List[int], rank: List[int], x: int, y: int) -> None:
+        """
+        Union of two subsets using rank to keep tree height small.
+
+        Args:
+            parent: List storing parent information
+            rank: List storing rank information
+            x: Root of first set
+            y: Root of second set
+        """
         if rank[x] < rank[y]:
             parent[x] = y
         elif rank[x] > rank[y]:
@@ -22,59 +71,44 @@ class Graph:
             parent[y] = x
             rank[x] += 1
 
-    def kruskal_mst(self):
+    def kruskal_mst(self) -> List[List[float]]:
         """
-        Implements Kruskal's algorithm to find the MST.
+        Implements Kruskal's algorithm to find the Minimum Spanning Tree.
+
+        The algorithm works by:
+        1. Sorting edges by weight
+        2. Taking edges in ascending order of weight
+        3. Adding edge if it doesn't create a cycle
 
         Returns:
-            list: List of edges in the MST, where each edge is [u, v, weight].
+            List of edges in the MST, where each edge is [u, v, weight]
         """
-        result = []
-        i = 0
-        e = 0
+        result = []  # Stores the MST edges
+        i = 0  # Index for sorted edges
+        e = 0  # Number of edges in MST
 
+        # Sort edges by weight
         self.graph = sorted(self.graph, key=lambda item: item[2])
-        parent = []
-        rank = []
 
-        for node in range(self.V):
-            parent.append(node)
-            rank.append(0)
+        # Initialize parent and rank arrays
+        parent = list(range(self.vertices))
+        rank = [0] * self.vertices
 
-        while e < self.V - 1 and i < len(self.graph):
-            u, v, w = self.graph[i]
+        # Build MST by adding edges that don't create cycles
+        while e < self.vertices - 1 and i < len(self.graph):
+            u, v, weight = self.graph[i]
             i += 1
-            x = self.find(parent, u)
-            y = self.find(parent, v)
 
+            # Find parents (sets) of vertices
+            x = self.find_parent(parent, int(u))
+            y = self.find_parent(parent, int(v))
+
+            # Add edge if it doesn't create cycle
             if x != y:
                 e += 1
-                result.append([u, v, w])
+                result.append([u, v, weight])
                 self.union(parent, rank, x, y)
 
-        total_weight = sum(w for _, _, w in result)
-        print(f"Total weight of MST (Kruskal's): {total_weight}")
+        total_weight = sum(weight for _, _, weight in result)
+        print(f"Total weight of MST (Kruskal's): {total_weight:.6f}")
         return result
-
-if __name__ == '__main__':
-    # Read FASTA sequences from file
-    fasta_data = read_fasta_file('output.fasta')
-
-    # Print the sequences from file
-    print("Sequences from FASTA file:")
-    for header, seq in fasta_data:
-        print(f"{header}\n{seq}")
-
-    # Create a graph from the sequences
-    g = Graph(len(fasta_data))
-    edges = create_distance_edges(fasta_data)
-    for u, v, w in edges:
-        g.addEdge(u, v, w)
-
-    # Apply Kruskal's algorithm to find MST
-    kruskal_edges = g.kruskal_mst()
-    
-    # Display the results
-    print("\nEdges in the MST:")
-    for u, v, weight in kruskal_edges:
-        print(f"Sequence {u+1} -- Sequence {v+1} [Weight: {weight}]")
